@@ -2,85 +2,28 @@ import ctypes
 import math
 import json
 import typing
+import pathlib
+import string
 
-Int32Array = typing.List[ctypes.c_int32]
+googcrypto = ctypes.CDLL("./libgoogcrypto.so")
+
+def _hashFunction(chunk_: typing.List[int], w_: typing.List[int], hash_: typing.List[int]) -> typing.List[int]:
+    hash_ = hash_.copy()
+    chunk_arg_type = ctypes.c_ubyte * 64
+    w_arg_type = ctypes.c_uint * 64
+    hash_arg_type = ctypes.c_uint * 8
+
+    googcrypto.hashFunction.argtypes = [chunk_arg_type, w_arg_type, hash_arg_type]
+
+    chunk_ = chunk_arg_type(*chunk_)
+    w_ = w_arg_type(*w_)
+    hash_ = hash_arg_type(*hash_)
+    googcrypto.hashFunction(chunk_, w_, hash_)
+    return list(hash_)
 
 
-def int32array(numbers: list) -> Int32Array:
-    return [ctypes.c_int32(x) for x in numbers]
-
-
-def print_int32array(array: Int32Array):
-    print(json.dumps([x.value for x in array]))
-
-
-pIa = [
-    128,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-]
-MG = nIa = [
+PIA = [128] + [0] * 63
+NIA = [
     1116352408,
     1899447441,
     3049323471,
@@ -146,8 +89,8 @@ MG = nIa = [
     3204031479,
     3329325298,
 ]
-num_hash_blocks = 8
-init_hash_blocks = [
+NUM_HASH_BLOCKS = 8
+INIT_HASH_BLOCKS = [
     1779033703,
     3144134277,
     1013904242,
@@ -157,431 +100,14 @@ init_hash_blocks = [
     528734635,
     1541459225,
 ]
-hea = {
-    "0": [
-        "A",
-        "B",
-        "C",
-        "D",
-        "E",
-        "F",
-        "G",
-        "H",
-        "I",
-        "J",
-        "K",
-        "L",
-        "M",
-        "N",
-        "O",
-        "P",
-        "Q",
-        "R",
-        "S",
-        "T",
-        "U",
-        "V",
-        "W",
-        "X",
-        "Y",
-        "Z",
-        "a",
-        "b",
-        "c",
-        "d",
-        "e",
-        "f",
-        "g",
-        "h",
-        "i",
-        "j",
-        "k",
-        "l",
-        "m",
-        "n",
-        "o",
-        "p",
-        "q",
-        "r",
-        "s",
-        "t",
-        "u",
-        "v",
-        "w",
-        "x",
-        "y",
-        "z",
-        "0",
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8",
-        "9",
-        "+",
-        "/",
-        "=",
-    ],
-    "1": [
-        "A",
-        "B",
-        "C",
-        "D",
-        "E",
-        "F",
-        "G",
-        "H",
-        "I",
-        "J",
-        "K",
-        "L",
-        "M",
-        "N",
-        "O",
-        "P",
-        "Q",
-        "R",
-        "S",
-        "T",
-        "U",
-        "V",
-        "W",
-        "X",
-        "Y",
-        "Z",
-        "a",
-        "b",
-        "c",
-        "d",
-        "e",
-        "f",
-        "g",
-        "h",
-        "i",
-        "j",
-        "k",
-        "l",
-        "m",
-        "n",
-        "o",
-        "p",
-        "q",
-        "r",
-        "s",
-        "t",
-        "u",
-        "v",
-        "w",
-        "x",
-        "y",
-        "z",
-        "0",
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8",
-        "9",
-        "+",
-        "/",
-    ],
-    "2": [
-        "A",
-        "B",
-        "C",
-        "D",
-        "E",
-        "F",
-        "G",
-        "H",
-        "I",
-        "J",
-        "K",
-        "L",
-        "M",
-        "N",
-        "O",
-        "P",
-        "Q",
-        "R",
-        "S",
-        "T",
-        "U",
-        "V",
-        "W",
-        "X",
-        "Y",
-        "Z",
-        "a",
-        "b",
-        "c",
-        "d",
-        "e",
-        "f",
-        "g",
-        "h",
-        "i",
-        "j",
-        "k",
-        "l",
-        "m",
-        "n",
-        "o",
-        "p",
-        "q",
-        "r",
-        "s",
-        "t",
-        "u",
-        "v",
-        "w",
-        "x",
-        "y",
-        "z",
-        "0",
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8",
-        "9",
-        "-",
-        "_",
-        "=",
-    ],
-    "3": [
-        "A",
-        "B",
-        "C",
-        "D",
-        "E",
-        "F",
-        "G",
-        "H",
-        "I",
-        "J",
-        "K",
-        "L",
-        "M",
-        "N",
-        "O",
-        "P",
-        "Q",
-        "R",
-        "S",
-        "T",
-        "U",
-        "V",
-        "W",
-        "X",
-        "Y",
-        "Z",
-        "a",
-        "b",
-        "c",
-        "d",
-        "e",
-        "f",
-        "g",
-        "h",
-        "i",
-        "j",
-        "k",
-        "l",
-        "m",
-        "n",
-        "o",
-        "p",
-        "q",
-        "r",
-        "s",
-        "t",
-        "u",
-        "v",
-        "w",
-        "x",
-        "y",
-        "z",
-        "0",
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8",
-        "9",
-        "-",
-        "_",
-        ".",
-    ],
-    "4": [
-        "A",
-        "B",
-        "C",
-        "D",
-        "E",
-        "F",
-        "G",
-        "H",
-        "I",
-        "J",
-        "K",
-        "L",
-        "M",
-        "N",
-        "O",
-        "P",
-        "Q",
-        "R",
-        "S",
-        "T",
-        "U",
-        "V",
-        "W",
-        "X",
-        "Y",
-        "Z",
-        "a",
-        "b",
-        "c",
-        "d",
-        "e",
-        "f",
-        "g",
-        "h",
-        "i",
-        "j",
-        "k",
-        "l",
-        "m",
-        "n",
-        "o",
-        "p",
-        "q",
-        "r",
-        "s",
-        "t",
-        "u",
-        "v",
-        "w",
-        "x",
-        "y",
-        "z",
-        "0",
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8",
-        "9",
-        "-",
-        "_",
-    ],
-}
-we = {
-    "0": 52,
-    "1": 53,
-    "2": 54,
-    "3": 55,
-    "4": 56,
-    "5": 57,
-    "6": 58,
-    "7": 59,
-    "8": 60,
-    "9": 61,
-    "A": 0,
-    "B": 1,
-    "C": 2,
-    "D": 3,
-    "E": 4,
-    "F": 5,
-    "G": 6,
-    "H": 7,
-    "I": 8,
-    "J": 9,
-    "K": 10,
-    "L": 11,
-    "M": 12,
-    "N": 13,
-    "O": 14,
-    "P": 15,
-    "Q": 16,
-    "R": 17,
-    "S": 18,
-    "T": 19,
-    "U": 20,
-    "V": 21,
-    "W": 22,
-    "X": 23,
-    "Y": 24,
-    "Z": 25,
-    "a": 26,
-    "b": 27,
-    "c": 28,
-    "d": 29,
-    "e": 30,
-    "f": 31,
-    "g": 32,
-    "h": 33,
-    "i": 34,
-    "j": 35,
-    "k": 36,
-    "l": 37,
-    "m": 38,
-    "n": 39,
-    "o": 40,
-    "p": 41,
-    "q": 42,
-    "r": 43,
-    "s": 44,
-    "t": 45,
-    "u": 46,
-    "v": 47,
-    "w": 48,
-    "x": 49,
-    "y": 50,
-    "z": 51,
-    "+": 62,
-    "/": 63,
-    "=": 64,
-    "-": 62,
-    "_": 63,
-    ".": 64,
-}
-kDb = {
-    "StorageKey": {
-        "ACCESS_HISTORY": "external_access_history",
-        "KERNEL": "datalab_kernelAlloc",
-        "LOCAL_STORE": "colab_localstore",
-        "PREFS": "datalab_prefs",
-    },
-    "getUsername": lambda: "u.email@gmail.com" or "",
-    "init": lambda: None,
-    "reauthenticate": lambda: None,
-}
-
-
-def unsigned_right_shift(num, shift):
-    if num >= 0:
-        return num >> shift
-    else:
-        # If num is negative, simulate zero-fill right shift
-        return (num >> shift) + (2 ** (32 - shift))
-
+MINI_ALPHABET = string.ascii_uppercase + string.ascii_lowercase + string.digits
+ALPHABETS = [
+    MINI_ALPHABET + "+/=",
+    MINI_ALPHABET + "+/",
+    MINI_ALPHABET + "-_=",
+    MINI_ALPHABET + "-_.",
+    MINI_ALPHABET + "-_",
+]
 
 class CustomHash:
     def __init__(self, num_hash_blocks: int, init_hash_blocks: list):
@@ -596,103 +122,19 @@ class CustomHash:
 
     def reset(self):
         self.total_ = self.inChunk_ = 0
-        self.hash_ = int32array(self.initHashBlocks_)
+        self.hash_ = self.initHashBlocks_
 
     def hashFunction(self):
         chunk_, w_, hash_ = self.chunk_, self.w_, self.hash_
-        b = chunk_
-        c = w_
-        d = 0
-        e = 0
-        while e < len(b):
-            c[d] = (b[e] << 24) | (b[e + 1] << 16) | (b[e + 2] << 8) | b[e + 3]
-            d += 1
-            e = 4 * d
-        b = 16
-        while 64 > b:
-            e = c[b - 15] | 0
-            d = c[b - 2] | 0
-            f = (
-                (c[b - 16] | 0)
-                + (
-                    (unsigned_right_shift(e, 7) | (e << 25))
-                    ^ (unsigned_right_shift(e, 18) | (e << 14))
-                    ^ unsigned_right_shift(e, 3)
-                )
-            ) | 0
-            h = (
-                (c[b - 7] | 0)
-                + (
-                    (unsigned_right_shift(d, 17) | (d << 15))
-                    ^ (unsigned_right_shift(d, 19) | (d << 13))
-                    ^ unsigned_right_shift(d, 10)
-                )
-            ) | 0
-            c[b] = (f + h) | 0
-            b += 1
-        d = hash_[0].value | 0
-        e = hash_[1].value | 0
-        k = hash_[2].value | 0
-        l = hash_[3].value | 0
-        m = hash_[4].value | 0
-        n = hash_[5].value | 0
-        p = hash_[6].value | 0
-        f = hash_[7].value | 0
-        b = 0
-        qs = []
-        while 64 > b:
-            q = (
-                ctypes.c_int32(
-                    (
-                        (unsigned_right_shift(d, 2) | (d << 30))
-                        ^ (unsigned_right_shift(d, 13) | (d << 19))
-                        ^ (unsigned_right_shift(d, 22) | (d << 10))
-                    )
-                    + ((d & e) ^ (d & k) ^ (e & k))
-                ).value
-                | 0
-            )
-            qs.append(q)
-            h = (m & n) ^ (~m & p)
-            f = (
-                ctypes.c_int32(
-                    f
-                    + ctypes.c_int32(
-                        (unsigned_right_shift(m, 6) | (m << 26))
-                        ^ (unsigned_right_shift(m, 11) | (m << 21))
-                        ^ (unsigned_right_shift(m, 25) | (m << 7))
-                    ).value
-                ).value
-                | 0
-            )
-            h = (h + (MG[b] | 0)) | 0
-            h = (f + ((h + (c[b] | 0)) | 0)) | 0
-            f = p
-            p = n
-            n = m
-            m = (l + h) | 0
-            l = k
-            k = e
-            e = d
-            d = (h + q) | 0
-            b += 1
-        print(qs)
-        self.hash_[0].value = (hash_[0].value + d) | 0
-        self.hash_[1].value = (hash_[1].value + e) | 0
-        self.hash_[2].value = (hash_[2].value + k) | 0
-        self.hash_[3].value = (hash_[3].value + l) | 0
-        self.hash_[4].value = (hash_[4].value + m) | 0
-        self.hash_[5].value = (hash_[5].value + n) | 0
-        self.hash_[6].value = (hash_[6].value + p) | 0
-        self.hash_[7].value = (hash_[7].value + f) | 0
-        print_int32array(self.hash_)
+        hash_ = _hashFunction(chunk_=chunk_, w_=w_, hash_=hash_)
+        self.hash_ = hash_
 
     def update(self, buffer: list | str, _length: int = None):
         l = _length or len(buffer)
         inChunk = self.inChunk_
         c = 0
         if isinstance(buffer, str):
-            buffer = str2bytes(buffer)
+            buffer = list(map(ord,buffer))
         while c < l:
             char = buffer[c]
             c += 1
@@ -715,9 +157,9 @@ class CustomHash:
         a = []
         b = 8 * self.total_
         if 56 > self.inChunk_:
-            self.update(pIa, 56 - self.inChunk_)
+            self.update(PIA, 56 - self.inChunk_)
         else:
-            self.update(pIa, self.blockSize - (self.inChunk_ - 56))
+            self.update(PIA, self.blockSize - (self.inChunk_ - 56))
         c = 63
         while 56 <= c:
             self.chunk_[c] = math.floor(b) & 255
@@ -728,16 +170,13 @@ class CustomHash:
         while c < self.numHashBlocks_:
             d = 24
             while 0 <= d:
-                a[b] = (self.hash_[c].value >> d) & 255
+                if b == len(a):
+                    a.append(0)
+                a[b] = (self.hash_[c] >> d) & 255
                 b += 1
                 d -= 8
             c += 1
         return a
-
-
-def str2bytes(s: str) -> list:
-    return [ord(c) for c in s]
-
 
 class CustomFile:
     def __init__(self, fileObj: dict):
@@ -776,7 +215,7 @@ class CustomFile:
 
 
 def xe(buffer: list, length: int = 0):
-    b = hea[length]
+    b = ALPHABETS[length]
     c = [0] * math.floor(len(buffer) / 3)
     d = b[64] or ""
     e = 0
@@ -792,15 +231,19 @@ def xe(buffer: list, length: int = 0):
         c[f] = "" + m + h + k + l
         f += 1
         e += 3
+
     m = 0
     l = d
-    match (len(buffer) - e):
-        case 2:
-            m = buffer[e + 1]
-            l = b[(m & 15) << 2] or d
-        case 1:
-            buffer = buffer[e]
-            c[f] = "" + b[buffer >> 2] + b[((buffer & 3) << 4) | (m >> 4)] + l + d
+    delta = len(buffer) - e
+
+    if (delta >= 2):
+        m = buffer[e + 1]
+        l = b[(m & 15) << 2] or d
+    if (delta >= 1):
+        buffer = buffer[e]
+        if f == len(c):
+            c.append('')
+        c[f] = "" + b[buffer >> 2] + b[((buffer & 3) << 4) | (m >> 4)] + l + d
     return "".join(c)
 
 
@@ -816,9 +259,13 @@ def file2array(file):
     return [props, values]
 
 
-def hashFile(file):
+def get_assign_nbh_token(user_email: str, notebook_id: str):
+    file = notebook2customFile(
+            user_email,
+            { "notebookId": notebook_id }
+        )
     customHash = CustomHash(
-        num_hash_blocks=num_hash_blocks, init_hash_blocks=init_hash_blocks
+        num_hash_blocks=NUM_HASH_BLOCKS, init_hash_blocks=INIT_HASH_BLOCKS
     )
     customHash.update(json.dumps(file2array(file), separators=(",", " ")))
     return xe(customHash.digest(), 3)
@@ -842,13 +289,3 @@ def notebook2customFile(colab_user_email: str, notebook: dict):
             "userId": userId,
         }
     )
-
-
-print(
-    hashFile(
-        notebook2customFile(
-            "m.durand@straton-dcim.com",
-            {"notebookId": "14mNurj5d0LDES8u4SI8NWOIKrZY1rZP3"},
-        )
-    )
-)

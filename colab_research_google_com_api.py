@@ -7,9 +7,12 @@ import re
 import string
 import time
 import typing
+import urllib.parse
 
 import requests
 import requests.cookies
+
+from colab_research_google_com_api_crypto import get_assign_nbh_token
 
 # Global references :
 # https://dagshub.com/blog/reverse-engineering-google-colab/
@@ -360,7 +363,7 @@ get_files_with_included_embedded_items: typing.Callable[
     [requests.Session, str, str, str], list
 ] = lambda session, drive_api_key, sapisidhash, notebook_id: (
     session.get(
-        "https://clients6.google.com/drive/v2beta/files/",
+        "https://clients6.google.com/drive/v2beta/files",
         params={
             "includeEmbeddedItems": True,
             "q": 'embeddingParent = "{0}" and title = "tagged-revisions"'.format(
@@ -382,3 +385,18 @@ get_files_with_included_embedded_items: typing.Callable[
         },
     ).json()
 )
+
+get_assign_tunnel: typing.Callable[
+    [requests.Session, str, str], dict
+] = lambda session, user_email, notebook_id: (
+    (lambda response: json.loads(response[4:]))
+    (session.get(
+        "https://colab.research.google.com/tun/m/assign",
+        params={
+            "authuser": 0,
+            "match_any": 1,
+            "nbh": get_assign_nbh_token(user_email=user_email, notebook_id=notebook_id),
+        },
+    ).text)
+)
+

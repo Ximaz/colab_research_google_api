@@ -1,27 +1,22 @@
 import base64
+import ctypes
 import hashlib
 import json
-import pathlib
 import random
 import re
 import string
 import time
 import typing
-import urllib.parse
 
 import requests
 import requests.cookies
 
-from colab_research_google_com_api_crypto import get_assign_nbh_token
-
 # Global references :
 # https://dagshub.com/blog/reverse-engineering-google-colab/
 
-# COOKIES
+GOOGCRYPTO = ctypes.CDLL("./libgoogcrypto.so")
 
-get_cookies: typing.Callable[[str], str] = lambda path: pathlib.Path(path).read_text(
-    "utf-8"
-)
+# COOKIES
 
 cookies_to_dict: typing.Callable[[str], dict] = lambda cookies: dict(
     [cookie.split("=", 1) for cookie in cookies.split("; ")]
@@ -386,17 +381,72 @@ get_files_with_included_embedded_items: typing.Callable[
     ).json()
 )
 
+
+def get_assign_nbh_token(notebook_id: str) -> str:
+    file = [["fileId"], [notebook_id]]
+    json_data = json.dumps(file, separators=(",", " "))
+    c_json_data = json_data.encode("utf-8")
+
+    GOOGCRYPTO.hash_json_file_object.argtypes = [ctypes.c_char_p]
+    GOOGCRYPTO.hash_json_file_object.restype = ctypes.POINTER(ctypes.c_ubyte)
+
+    GOOGCRYPTO.free_hash.argtypes = [ctypes.POINTER(ctypes.c_ubyte)]
+
+    result = GOOGCRYPTO.hash_json_file_object(c_json_data)
+    result_string = ctypes.string_at(result).decode("utf-8")
+
+    GOOGCRYPTO.free_hash(result)
+
+    return result_string
+
+
 get_assign_tunnel: typing.Callable[
     [requests.Session, str, str], dict
-] = lambda session, user_email, notebook_id: (
-    (lambda response: json.loads(response[4:]))
-    (session.get(
-        "https://colab.research.google.com/tun/m/assign",
-        params={
-            "authuser": 0,
-            "match_any": 1,
-            "nbh": get_assign_nbh_token(user_email=user_email, notebook_id=notebook_id),
-        },
-    ).text)
+] = lambda session, notebook_id: (
+    (lambda response: json.loads(response[4:]))(
+        session.get(
+            "https://colab.research.google.com/tun/m/assign",
+            params={
+                "authuser": 0,
+                "match_any": 1,
+                "nbh": get_assign_nbh_token(notebook_id=notebook_id),
+            },
+        ).text
+    )
 )
 
+get_notebook_ws_session: typing.Callable[
+    [requests.Session, str, str, str], dict
+] = lambda session, endpoint, notebook_name, notebook_id: (
+    session.post(
+        "https://colab.research.google.com/tun/m/" + endpoint + "/api/sessions",
+        params={
+            "authuser": 0,
+        },
+        json={
+            "name": notebook_name,
+            "path": "fileId=" + notebook_id,
+            "type": "notebook",
+            "kernel": {"name": "python3"},
+        },
+        headers={
+            "Origin": "https://colab.research.google.com",
+            "X-Colab-Tunnel": "Google"
+        }
+    ).json()
+)
+
+# get_sid_socketio: typing.Callable[[requests.Session, str, str], str] = lambda session, endpoint, t: (
+#     session.get("https://colab.research.google.com/tun/m/" + endpoint + "/socket.io",
+#         params={
+#             "authuser": 0,
+#             "EIO": 3,
+#             "transport": "polling",
+#             "t": t
+#         },
+#         headers={
+#             "Origin": "https://colab.research.google.com",
+#             "X-Colab-Tunnel": "Google"
+#         }
+#     ).text
+# )

@@ -1,6 +1,5 @@
 cookies.txt
 .prettierrc
 main.py
-*.so
 *.o
 config.json

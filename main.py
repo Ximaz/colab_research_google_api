@@ -27,6 +27,7 @@ def main():
                         "' and complete the captcha before executing the script.")
 
     ws_session = CRGCA.get_notebook_ws_session(session, tunnel["endpoint"], notebook_name, notebook_id)
+    print(ws_session)
 
 if __name__ == "__main__":
     main()

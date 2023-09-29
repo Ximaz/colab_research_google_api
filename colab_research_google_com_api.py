@@ -15,9 +15,9 @@ import requests.cookies
 # https://dagshub.com/blog/reverse-engineering-google-colab/
 
 try:
-    GOOGCRYPTO = ctypes.CDLL("./lib/libgoogcrypto.so")
-except OSError:
     GOOGCRYPTO = ctypes.CDLL("lib\\libgoogcrypto.dll")
+except OSError:
+    GOOGCRYPTO = ctypes.CDLL("./lib/libgoogcrypto.so")
 
 # COOKIES
 
